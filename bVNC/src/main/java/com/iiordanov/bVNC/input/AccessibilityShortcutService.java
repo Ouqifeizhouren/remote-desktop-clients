@@ -20,7 +20,6 @@ public class AccessibilityShortcutService extends AccessibilityService {
         // No-op.
     }
 
-
     @Override
     protected void onServiceConnected() {
         AccessibilityServiceInfo serviceInfo = getServiceInfo();
