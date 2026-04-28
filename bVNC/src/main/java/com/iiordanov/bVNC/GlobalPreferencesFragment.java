@@ -1,7 +1,10 @@
 package com.iiordanov.bVNC;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.provider.Settings;
 
+import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 
 import com.undatech.remoteClientUi.R;
@@ -18,5 +21,17 @@ public class GlobalPreferencesFragment extends PreferenceFragmentCompat {
         } else if (Utils.isSpice(getContext())) {
             addPreferencesFromResource(R.xml.global_preferences_spice);
         }
+        setupAccessibilityShortcutPreferences();
+    }
+
+    private void setupAccessibilityShortcutPreferences() {
+        Preference accessibilitySettings = findPreference("accessibilityShortcutSettings");
+        if (accessibilitySettings == null) {
+            return;
+        }
+        accessibilitySettings.setOnPreferenceClickListener(preference -> {
+            startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
+            return true;
+        });
     }
 }

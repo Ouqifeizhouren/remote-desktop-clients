@@ -27,6 +27,7 @@ import static com.iiordanov.bVNC.Constants.EXTRA_KEYS_TOUR_SHOWN;
 import static com.iiordanov.bVNC.dialogs.MetaKeyDialog.tryPopulateKeysInListWhereFieldMatchesValue;
 
 import android.animation.ObjectAnimator;
+import android.accessibilityservice.AccessibilityServiceInfo;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -56,6 +57,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.accessibility.AccessibilityManager;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -64,6 +66,7 @@ import android.widget.LinearLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.viewpager.widget.ViewPager;
 
@@ -83,6 +86,8 @@ import com.iiordanov.bVNC.input.IgnoringMouseInputListener;
 import com.iiordanov.bVNC.input.MetaKeyBean;
 import com.iiordanov.bVNC.input.Panner;
 import com.iiordanov.bVNC.input.RemoteCanvasHandler;
+import com.iiordanov.bVNC.input.AccessibilityShortcutKeyDispatcher;
+import com.iiordanov.bVNC.input.AccessibilityShortcutService;
 import com.iiordanov.bVNC.input.RemoteClientsInputListener;
 import com.iiordanov.bVNC.input.RemoteKeyboard;
 import com.iiordanov.bVNC.input.ScrollWheelButton;
@@ -787,6 +792,7 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
     protected void onPause() {
         super.onPause();
         Log.i(TAG, "onPause called.");
+        AccessibilityShortcutKeyDispatcher.unregisterCallback();
         try {
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(canvas.getWindowToken(), 0);
@@ -799,11 +805,38 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
     protected void onResume() {
         super.onResume();
         Log.i(TAG, "onResume called.");
+        AccessibilityShortcutKeyDispatcher.registerCallback(event -> inputListener != null && inputListener.onKey(canvas, event.getKeyCode(), event));
+        maybeWarnAboutAccessibilityShortcutCapture();
         try {
             canvas.postInvalidateDelayed(600);
         } catch (NullPointerException e) {
             Log.d(TAG, "Ignoring NullPointerException during onResume");
         }
+    }
+
+    private void maybeWarnAboutAccessibilityShortcutCapture() {
+        if (!Utils.querySharedPreferenceBoolean(this, Constants.captureShortcutKeysWithAccessibilityTag, true)) {
+            return;
+        }
+        if (isAccessibilityShortcutServiceEnabled()) {
+            return;
+        }
+        Toast.makeText(this, getString(R.string.accessibility_shortcut_capture_hint), Toast.LENGTH_LONG).show();
+    }
+
+    private boolean isAccessibilityShortcutServiceEnabled() {
+        AccessibilityManager manager = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
+        if (manager == null) {
+            return false;
+        }
+        for (AccessibilityServiceInfo serviceInfo : manager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)) {
+            if (serviceInfo.getResolveInfo() != null
+                    && serviceInfo.getResolveInfo().serviceInfo != null
+                    && AccessibilityShortcutService.class.getName().equals(serviceInfo.getResolveInfo().serviceInfo.name)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -1226,6 +1259,7 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
     protected void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "onDestroy called.");
+        AccessibilityShortcutKeyDispatcher.unregisterCallback();
         if (remoteConnection != null)
             remoteConnection.closeConnection();
         System.gc();
