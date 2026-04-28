@@ -48,7 +48,6 @@ public class AccessibilityShortcutService extends AccessibilityService {
         return true;
     }
 
-
     private KeyEvent normalizeEventForRemote(KeyEvent event) {
         if (event.getKeyCode() == KeyEvent.KEYCODE_APP_SWITCH && event.isAltPressed()) {
             int metaState = event.getMetaState();
