@@ -1,7 +1,6 @@
 package com.iiordanov.bVNC.input;
 
 import android.accessibilityservice.AccessibilityService;
-import android.accessibilityservice.AccessibilityServiceInfo;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 
@@ -20,17 +19,6 @@ public class AccessibilityShortcutService extends AccessibilityService {
         // No-op.
     }
 
-
-    @Override
-    protected void onServiceConnected() {
-        AccessibilityServiceInfo serviceInfo = getServiceInfo();
-        if (serviceInfo == null) {
-            return;
-        }
-        serviceInfo.flags |= AccessibilityServiceInfo.FLAG_REQUEST_FILTER_KEY_EVENTS;
-        setServiceInfo(serviceInfo);
-    }
-
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
         if (!Utils.querySharedPreferenceBoolean(this, Constants.captureShortcutKeysWithAccessibilityTag, true)) {
@@ -39,13 +27,7 @@ public class AccessibilityShortcutService extends AccessibilityService {
         if (!shouldCaptureWithAccessibility(event)) {
             return false;
         }
-        if (!AccessibilityShortcutKeyDispatcher.hasCallback()) {
-            return false;
-        }
-        AccessibilityShortcutKeyDispatcher.dispatch(new KeyEvent(event));
-        // Important: consume matched shortcut keys whenever an active remote session is listening,
-        // otherwise Android may still execute global shortcuts (e.g. Alt+Tab) on some ROMs.
-        return true;
+        return AccessibilityShortcutKeyDispatcher.dispatch(new KeyEvent(event));
     }
 
     private boolean shouldCaptureWithAccessibility(KeyEvent event) {
