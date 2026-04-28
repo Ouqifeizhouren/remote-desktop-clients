@@ -4,6 +4,15 @@
             android:defaultValue="true"
             android:key="preferSendingUnicode"
             android:title="@string/prefer_sending_unicode" />
+    <SwitchPreferenceCompat
+        android:defaultValue="true"
+        android:key="captureShortcutKeysWithAccessibility"
+        android:summary="@string/capture_shortcuts_with_accessibility_summary"
+        android:title="@string/capture_shortcuts_with_accessibility_title" />
+    <Preference
+        android:key="accessibilityShortcutSettings"
+        android:summary="@string/capture_shortcuts_accessibility_settings_summary"
+        android:title="@string/capture_shortcuts_accessibility_settings_title" />
     <EditTextPreference
         android:key="preferenceSpacerBottomRdp" />
 </PreferenceScreen>

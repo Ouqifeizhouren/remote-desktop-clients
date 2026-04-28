@@ -84,6 +84,22 @@
             android:theme="@style/AppThemeDayNight"
         />
 
+
+        <service
+            android:name="com.iiordanov.bVNC.input.AccessibilityShortcutService"
+            android:description="@string/capture_shortcuts_with_accessibility_title"
+            android:exported="true"
+            android:label="@string/capture_shortcuts_with_accessibility_title"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_shortcut_service" />
+        </service>
+
         <meta-data
             android:name="com.samsung.android.keepalive.density"
             android:value="true" />
