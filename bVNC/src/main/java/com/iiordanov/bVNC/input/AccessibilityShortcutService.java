@@ -108,7 +108,27 @@ public class AccessibilityShortcutService extends AccessibilityService {
         if (keyCode == KeyEvent.KEYCODE_UNKNOWN) {
             return false;
         }
-        return true;
+        return !isTypingKey(keyCode);
+    }
+
+    private boolean isTypingKey(int keyCode) {
+        return (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z)
+                || (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9)
+                || keyCode == KeyEvent.KEYCODE_SPACE
+                || keyCode == KeyEvent.KEYCODE_MINUS
+                || keyCode == KeyEvent.KEYCODE_EQUALS
+                || keyCode == KeyEvent.KEYCODE_LEFT_BRACKET
+                || keyCode == KeyEvent.KEYCODE_RIGHT_BRACKET
+                || keyCode == KeyEvent.KEYCODE_BACKSLASH
+                || keyCode == KeyEvent.KEYCODE_SEMICOLON
+                || keyCode == KeyEvent.KEYCODE_APOSTROPHE
+                || keyCode == KeyEvent.KEYCODE_COMMA
+                || keyCode == KeyEvent.KEYCODE_PERIOD
+                || keyCode == KeyEvent.KEYCODE_SLASH
+                || keyCode == KeyEvent.KEYCODE_GRAVE
+                || keyCode == KeyEvent.KEYCODE_DEL
+                || keyCode == KeyEvent.KEYCODE_FORWARD_DEL
+                || keyCode == KeyEvent.KEYCODE_ENTER;
     }
 
     private boolean isModifierKeyCode(int keyCode) {
