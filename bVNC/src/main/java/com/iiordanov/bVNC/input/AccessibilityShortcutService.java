@@ -3,10 +3,10 @@ package com.iiordanov.bVNC.input;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Intent;
-import android.view.inputmethod.InputMethodManager;
 import android.util.SparseBooleanArray;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
+import android.view.inputmethod.InputMethodManager;
 
 import com.iiordanov.bVNC.Constants;
 import com.iiordanov.bVNC.Utils;
@@ -14,6 +14,7 @@ import com.iiordanov.bVNC.Utils;
 public class AccessibilityShortcutService extends AccessibilityService {
 
     private final SparseBooleanArray capturedKeyCodes = new SparseBooleanArray();
+    private final SparseBooleanArray pressedModifierKeys = new SparseBooleanArray();
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -38,6 +39,7 @@ public class AccessibilityShortcutService extends AccessibilityService {
     @Override
     public boolean onUnbind(Intent intent) {
         capturedKeyCodes.clear();
+        pressedModifierKeys.clear();
         return super.onUnbind(intent);
     }
 
@@ -49,12 +51,11 @@ public class AccessibilityShortcutService extends AccessibilityService {
         if (!AccessibilityShortcutKeyDispatcher.hasCallback() || event == null) {
             return false;
         }
-        if (isInputMethodAcceptingText()) {
-            return false;
-        }
 
         int keyCode = event.getKeyCode();
         int action = event.getAction();
+
+        updateModifierPressedState(keyCode, action);
 
         boolean isShortcutEvent = shouldCaptureWithAccessibility(event);
         boolean wasCapturedOnDown = capturedKeyCodes.get(keyCode, false);
@@ -78,7 +79,7 @@ public class AccessibilityShortcutService extends AccessibilityService {
     }
 
     private KeyEvent normalizeEventForRemote(KeyEvent event) {
-        if (event.getKeyCode() == KeyEvent.KEYCODE_APP_SWITCH && event.isAltPressed()) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_APP_SWITCH && isAltPressed(event)) {
             int metaState = event.getMetaState();
             if ((metaState & (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON | KeyEvent.META_ALT_RIGHT_ON)) == 0) {
                 metaState |= KeyEvent.META_ALT_ON;
@@ -105,16 +106,51 @@ public class AccessibilityShortcutService extends AccessibilityService {
         if (isModifierKeyCode(keyCode)) {
             return true;
         }
-        if (keyCode == KeyEvent.KEYCODE_APP_SWITCH) {
-            return true;
-        }
-        if (keyCode >= KeyEvent.KEYCODE_F1 && keyCode <= KeyEvent.KEYCODE_F12) {
+
+        if (keyCode == KeyEvent.KEYCODE_APP_SWITCH || (keyCode >= KeyEvent.KEYCODE_F1 && keyCode <= KeyEvent.KEYCODE_F12)) {
             return true;
         }
 
-        // Do not capture general character typing here, even with modifier overlap,
-        // otherwise keys may bypass remote IME composition and appear stuck on some ROMs.
-        return false;
+        if (isInputMethodAcceptingText()) {
+            return false;
+        }
+
+        if (!isAnyShortcutModifierPressed(event)) {
+            return false;
+        }
+
+        return isNonPrintingShortcutCompanionKey(keyCode);
+    }
+
+    private boolean isAnyShortcutModifierPressed(KeyEvent event) {
+        return event.isCtrlPressed()
+                || event.isAltPressed()
+                || event.isMetaPressed()
+                || event.isFunctionPressed()
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_CTRL_LEFT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_CTRL_RIGHT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_LEFT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_RIGHT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_META_LEFT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_META_RIGHT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_FUNCTION, false);
+    }
+
+    private boolean isNonPrintingShortcutCompanionKey(int keyCode) {
+        return keyCode == KeyEvent.KEYCODE_TAB
+                || keyCode == KeyEvent.KEYCODE_ESCAPE
+                || keyCode == KeyEvent.KEYCODE_MOVE_HOME
+                || keyCode == KeyEvent.KEYCODE_MOVE_END
+                || keyCode == KeyEvent.KEYCODE_PAGE_UP
+                || keyCode == KeyEvent.KEYCODE_PAGE_DOWN
+                || keyCode == KeyEvent.KEYCODE_INSERT
+                || keyCode == KeyEvent.KEYCODE_FORWARD_DEL
+                || keyCode == KeyEvent.KEYCODE_DEL
+                || keyCode == KeyEvent.KEYCODE_ENTER
+                || keyCode == KeyEvent.KEYCODE_DPAD_UP
+                || keyCode == KeyEvent.KEYCODE_DPAD_DOWN
+                || keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+                || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
     }
 
     private boolean isModifierKeyCode(int keyCode) {
@@ -125,6 +161,24 @@ public class AccessibilityShortcutService extends AccessibilityService {
                 || keyCode == KeyEvent.KEYCODE_META_LEFT
                 || keyCode == KeyEvent.KEYCODE_META_RIGHT
                 || keyCode == KeyEvent.KEYCODE_FUNCTION;
+    }
+
+    private void updateModifierPressedState(int keyCode, int action) {
+        if (!isModifierKeyCode(keyCode)) {
+            return;
+        }
+
+        if (action == KeyEvent.ACTION_DOWN) {
+            pressedModifierKeys.put(keyCode, true);
+        } else if (action == KeyEvent.ACTION_UP) {
+            pressedModifierKeys.delete(keyCode);
+        }
+    }
+
+    private boolean isAltPressed(KeyEvent event) {
+        return event.isAltPressed()
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_LEFT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_RIGHT, false);
     }
 
     private boolean isInputMethodAcceptingText() {
