@@ -20,6 +20,10 @@ public final class AccessibilityShortcutKeyDispatcher {
         callback = null;
     }
 
+    public static synchronized boolean hasCallback() {
+        return callback != null;
+    }
+
     public static synchronized boolean dispatch(KeyEvent event) {
         if (callback == null || event == null) {
             return false;
