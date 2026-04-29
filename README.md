@@ -191,6 +191,12 @@ without altering any of the source code of the project.
   `Custom` and has `Vnc` in its name. For instance, if you set PROJECT to `CustomYourVncClient`. The `bVNC/prepare_project.sh` script
   will strip "Custom" from that identifier and once the project is built will be com.iiordanov.YourVncClient.
 
+## Accessibility-Based Keyboard Shortcuts
+
+The latest version introduces robust support for physical keyboard shortcuts. By enabling the application's Accessibility Service, you can seamlessly send complex keyboard combinations (like Alt+Tab, Windows keys, etc.) to the remote system without them being intercepted by the local Android OS.
+
+**Important Note for RDP Users:** If you want all physical keyboard presses (including normal letters and numbers) to reliably trigger the remote system's Input Method Editor (IME), please ensure that the **"Prefer Sending Unicode"** option is disabled in the app's advanced connection settings. This allows physical key presses to be transmitted as virtual keycodes rather than direct character injections.
+
 ## Bugs
 
 Please post any bugs you find at the GitHub issue tracker:
