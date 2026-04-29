@@ -937,4 +937,9 @@ Below that is where you configure your connection.
     <string name="disable_battery_optimizations">🔋Disable Battery Optimizations</string>
     <string name="disable_battery_optimizations_failed">Could not open battery optimization settings. Disable battery optimization manually in system settings.</string>
     <string name="disable_battery_optimizations_already_done">App is already exempt from battery optimizations.</string>
+    <string name="capture_shortcuts_with_accessibility_title">Capture desktop shortcuts with Accessibility Service</string>
+    <string name="capture_shortcuts_with_accessibility_summary">Captures Ctrl/Alt/Meta and function-key combinations before Android intercepts them.</string>
+    <string name="capture_shortcuts_accessibility_settings_title">Open Accessibility settings</string>
+    <string name="capture_shortcuts_accessibility_settings_summary">Enable "aRDP Shortcut Key Capture" in Android Accessibility settings.</string>
+    <string name="accessibility_shortcut_capture_hint">To use desktop shortcuts reliably, enable "aRDP Shortcut Key Capture" in Accessibility settings.</string>
 </resources>
