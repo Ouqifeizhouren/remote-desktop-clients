@@ -3,6 +3,7 @@ package com.iiordanov.bVNC.input;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Intent;
+import android.view.inputmethod.InputMethodManager;
 import android.util.SparseBooleanArray;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
@@ -46,6 +47,9 @@ public class AccessibilityShortcutService extends AccessibilityService {
             return false;
         }
         if (!AccessibilityShortcutKeyDispatcher.hasCallback() || event == null) {
+            return false;
+        }
+        if (isInputMethodAcceptingText()) {
             return false;
         }
 
@@ -121,5 +125,10 @@ public class AccessibilityShortcutService extends AccessibilityService {
                 || keyCode == KeyEvent.KEYCODE_META_LEFT
                 || keyCode == KeyEvent.KEYCODE_META_RIGHT
                 || keyCode == KeyEvent.KEYCODE_FUNCTION;
+    }
+
+    private boolean isInputMethodAcceptingText() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+        return imm != null && imm.isAcceptingText();
     }
 }
