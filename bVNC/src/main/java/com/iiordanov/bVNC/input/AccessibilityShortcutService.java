@@ -108,19 +108,9 @@ public class AccessibilityShortcutService extends AccessibilityService {
             return true;
         }
 
-        if (isImeComposingCandidateKey(keyCode)) {
-            return false;
-        }
-
-        return event.isCtrlPressed() || event.isAltPressed() || event.isMetaPressed() || event.isFunctionPressed();
-    }
-
-    private boolean isImeComposingCandidateKey(int keyCode) {
-        return (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z)
-                || (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9)
-                || keyCode == KeyEvent.KEYCODE_SPACE
-                || keyCode == KeyEvent.KEYCODE_ENTER
-                || keyCode == KeyEvent.KEYCODE_DEL;
+        // Do not capture general character typing here, even with modifier overlap,
+        // otherwise keys may bypass remote IME composition and appear stuck on some ROMs.
+        return false;
     }
 
     private boolean isModifierKeyCode(int keyCode) {
