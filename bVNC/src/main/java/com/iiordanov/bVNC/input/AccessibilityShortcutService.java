@@ -113,19 +113,11 @@ public class AccessibilityShortcutService extends AccessibilityService {
             return true;
         }
 
-        if (isCharacterAreaKey(keyCode)) {
-            return true;
-        }
-
         if (isInputMethodAcceptingText()) {
             return false;
         }
 
-        if (!isAnyShortcutModifierPressed(event)) {
-            return false;
-        }
-
-        return isNonPrintingShortcutCompanionKey(keyCode);
+        return isAnyShortcutModifierPressed(event) && isNonPrintingShortcutCompanionKey(keyCode);
     }
 
     private boolean isAnyShortcutModifierPressed(KeyEvent event) {
@@ -157,23 +149,6 @@ public class AccessibilityShortcutService extends AccessibilityService {
                 || keyCode == KeyEvent.KEYCODE_DPAD_DOWN
                 || keyCode == KeyEvent.KEYCODE_DPAD_LEFT
                 || keyCode == KeyEvent.KEYCODE_DPAD_RIGHT;
-    }
-
-    private boolean isCharacterAreaKey(int keyCode) {
-        return (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z)
-                || (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9)
-                || keyCode == KeyEvent.KEYCODE_SPACE
-                || keyCode == KeyEvent.KEYCODE_MINUS
-                || keyCode == KeyEvent.KEYCODE_EQUALS
-                || keyCode == KeyEvent.KEYCODE_LEFT_BRACKET
-                || keyCode == KeyEvent.KEYCODE_RIGHT_BRACKET
-                || keyCode == KeyEvent.KEYCODE_BACKSLASH
-                || keyCode == KeyEvent.KEYCODE_SEMICOLON
-                || keyCode == KeyEvent.KEYCODE_APOSTROPHE
-                || keyCode == KeyEvent.KEYCODE_COMMA
-                || keyCode == KeyEvent.KEYCODE_PERIOD
-                || keyCode == KeyEvent.KEYCODE_SLASH
-                || keyCode == KeyEvent.KEYCODE_GRAVE;
     }
 
     private boolean isModifierKeyCode(int keyCode) {
