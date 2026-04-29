@@ -2,8 +2,6 @@ package com.iiordanov.bVNC.input;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
-import android.content.Intent;
-import android.util.SparseBooleanArray;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 
@@ -11,9 +9,6 @@ import com.iiordanov.bVNC.Constants;
 import com.iiordanov.bVNC.Utils;
 
 public class AccessibilityShortcutService extends AccessibilityService {
-
-    private final SparseBooleanArray capturedKeyCodes = new SparseBooleanArray();
-    private final SparseBooleanArray pressedModifierKeys = new SparseBooleanArray();
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -36,50 +31,25 @@ public class AccessibilityShortcutService extends AccessibilityService {
     }
 
     @Override
-    public boolean onUnbind(Intent intent) {
-        capturedKeyCodes.clear();
-        pressedModifierKeys.clear();
-        return super.onUnbind(intent);
-    }
-
-    @Override
     protected boolean onKeyEvent(KeyEvent event) {
         if (!Utils.querySharedPreferenceBoolean(this, Constants.captureShortcutKeysWithAccessibilityTag, true)) {
             return false;
         }
-        if (!AccessibilityShortcutKeyDispatcher.hasCallback() || event == null) {
+        if (!shouldCaptureWithAccessibility(event)) {
             return false;
         }
-
-        int keyCode = event.getKeyCode();
-        int action = event.getAction();
-
-        updatePressedModifierState(keyCode, action);
-
-        boolean isShortcutEvent = shouldCaptureWithAccessibility(keyCode);
-        boolean wasCapturedOnDown = capturedKeyCodes.get(keyCode, false);
-
-        if (action == KeyEvent.ACTION_DOWN) {
-            if (!isShortcutEvent) {
-                return false;
-            }
-            capturedKeyCodes.put(keyCode, true);
-        } else if (action == KeyEvent.ACTION_UP) {
-            if (!isShortcutEvent && !wasCapturedOnDown) {
-                return false;
-            }
-            capturedKeyCodes.delete(keyCode);
-        } else if (!isShortcutEvent && !wasCapturedOnDown) {
+        if (!AccessibilityShortcutKeyDispatcher.hasCallback()) {
             return false;
         }
-
         KeyEvent normalizedEvent = normalizeEventForRemote(event);
         AccessibilityShortcutKeyDispatcher.dispatch(normalizedEvent);
+        // Important: consume matched shortcut keys whenever an active remote session is listening,
+        // otherwise Android may still execute global shortcuts (e.g. Alt+Tab) on some ROMs.
         return true;
     }
 
     private KeyEvent normalizeEventForRemote(KeyEvent event) {
-        if (event.getKeyCode() == KeyEvent.KEYCODE_APP_SWITCH && isAnyAltPressed()) {
+        if (event.getKeyCode() == KeyEvent.KEYCODE_APP_SWITCH && event.isAltPressed()) {
             int metaState = event.getMetaState();
             if ((metaState & (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON | KeyEvent.META_ALT_RIGHT_ON)) == 0) {
                 metaState |= KeyEvent.META_ALT_ON;
@@ -100,52 +70,17 @@ public class AccessibilityShortcutService extends AccessibilityService {
         return new KeyEvent(event);
     }
 
-    private boolean shouldCaptureWithAccessibility(int keyCode) {
-        if (isModifierKeyCode(keyCode)) {
+    private boolean shouldCaptureWithAccessibility(KeyEvent event) {
+        if (event == null) {
+            return false;
+        }
+        if (event.isCtrlPressed() || event.isAltPressed() || event.isMetaPressed() || event.isFunctionPressed()) {
             return true;
         }
-        if (isAnyShortcutModifierPressed()) {
-            return true;
-        }
+        int keyCode = event.getKeyCode();
         if (keyCode == KeyEvent.KEYCODE_APP_SWITCH) {
             return true;
         }
         return keyCode >= KeyEvent.KEYCODE_F1 && keyCode <= KeyEvent.KEYCODE_F12;
-    }
-
-    private void updatePressedModifierState(int keyCode, int action) {
-        if (!isModifierKeyCode(keyCode)) {
-            return;
-        }
-        if (action == KeyEvent.ACTION_DOWN) {
-            pressedModifierKeys.put(keyCode, true);
-        } else if (action == KeyEvent.ACTION_UP) {
-            pressedModifierKeys.delete(keyCode);
-        }
-    }
-
-    private boolean isAnyShortcutModifierPressed() {
-        return pressedModifierKeys.get(KeyEvent.KEYCODE_CTRL_LEFT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_CTRL_RIGHT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_LEFT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_RIGHT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_META_LEFT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_META_RIGHT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_FUNCTION, false);
-    }
-
-    private boolean isAnyAltPressed() {
-        return pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_LEFT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_RIGHT, false);
-    }
-
-    private boolean isModifierKeyCode(int keyCode) {
-        return keyCode == KeyEvent.KEYCODE_CTRL_LEFT
-                || keyCode == KeyEvent.KEYCODE_CTRL_RIGHT
-                || keyCode == KeyEvent.KEYCODE_ALT_LEFT
-                || keyCode == KeyEvent.KEYCODE_ALT_RIGHT
-                || keyCode == KeyEvent.KEYCODE_META_LEFT
-                || keyCode == KeyEvent.KEYCODE_META_RIGHT
-                || keyCode == KeyEvent.KEYCODE_FUNCTION;
     }
 }
