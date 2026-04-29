@@ -65,7 +65,7 @@ public class AccessibilityShortcutService extends AccessibilityService {
             }
             dispatchedKeyCodes.put(keyCode, true);
         } else if (action == KeyEvent.ACTION_UP) {
-            if (!shouldDispatch && !wasDispatchedOnDown) {
+            if (!wasDispatchedOnDown) {
                 return false;
             }
             dispatchedKeyCodes.delete(keyCode);
@@ -76,8 +76,9 @@ public class AccessibilityShortcutService extends AccessibilityService {
         KeyEvent normalizedEvent = normalizeEventForRemote(event);
         AccessibilityShortcutKeyDispatcher.dispatch(normalizedEvent);
 
-        // Only consume keys that Android commonly hijacks for system shortcuts.
-        return shouldConsumeToBlockSystemShortcut(event) || wasDispatchedOnDown;
+        // Consume every dispatched event to prevent duplicate/out-of-order delivery
+        // from the framework key path, which can invert down/up state on some ROMs.
+        return true;
     }
 
     private KeyEvent normalizeEventForRemote(KeyEvent event) {
@@ -108,34 +109,6 @@ public class AccessibilityShortcutService extends AccessibilityService {
             return false;
         }
         return true;
-    }
-
-    private boolean shouldConsumeToBlockSystemShortcut(KeyEvent event) {
-        int keyCode = event.getKeyCode();
-        if (isModifierKeyCode(keyCode)) {
-            return true;
-        }
-        if (keyCode == KeyEvent.KEYCODE_APP_SWITCH) {
-            return true;
-        }
-        if (keyCode >= KeyEvent.KEYCODE_F1 && keyCode <= KeyEvent.KEYCODE_F12) {
-            return true;
-        }
-        return isAnyShortcutModifierPressed(event);
-    }
-
-    private boolean isAnyShortcutModifierPressed(KeyEvent event) {
-        return event.isCtrlPressed()
-                || event.isAltPressed()
-                || event.isMetaPressed()
-                || event.isFunctionPressed()
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_CTRL_LEFT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_CTRL_RIGHT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_LEFT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_RIGHT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_META_LEFT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_META_RIGHT, false)
-                || pressedModifierKeys.get(KeyEvent.KEYCODE_FUNCTION, false);
     }
 
     private boolean isModifierKeyCode(int keyCode) {
