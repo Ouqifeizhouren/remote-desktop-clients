@@ -75,7 +75,9 @@ public class AccessibilityShortcutService extends AccessibilityService {
         }
 
         KeyEvent normalizedEvent = normalizeEventForRemote(event);
-        return AccessibilityShortcutKeyDispatcher.dispatch(normalizedEvent);
+        AccessibilityShortcutKeyDispatcher.dispatch(normalizedEvent);
+        // Consume captured events so Android global shortcut handlers do not also trigger.
+        return true;
     }
 
     private KeyEvent normalizeEventForRemote(KeyEvent event) {
@@ -111,16 +113,16 @@ public class AccessibilityShortcutService extends AccessibilityService {
             return true;
         }
 
+        if (isCharacterAreaKey(keyCode)) {
+            return true;
+        }
+
         if (isInputMethodAcceptingText()) {
             return false;
         }
 
         if (!isAnyShortcutModifierPressed(event)) {
             return false;
-        }
-
-        if (isCharacterAreaKey(keyCode)) {
-            return true;
         }
 
         return isNonPrintingShortcutCompanionKey(keyCode);
