@@ -3,6 +3,9 @@ package com.iiordanov.bVNC.input;
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.content.Intent;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.util.SparseBooleanArray;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
@@ -14,6 +17,33 @@ public class AccessibilityShortcutService extends AccessibilityService {
 
     private final SparseBooleanArray dispatchedKeyCodes = new SparseBooleanArray();
     private final SparseBooleanArray pressedModifierKeys = new SparseBooleanArray();
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private KeyEvent repeatingEvent = null;
+    private int repeatCount = 0;
+
+    private final Runnable repeatRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (repeatingEvent != null) {
+                repeatCount++;
+                KeyEvent repeated = new KeyEvent(
+                        repeatingEvent.getDownTime(),
+                        SystemClock.uptimeMillis(),
+                        KeyEvent.ACTION_DOWN,
+                        repeatingEvent.getKeyCode(),
+                        repeatCount,
+                        repeatingEvent.getMetaState(),
+                        repeatingEvent.getDeviceId(),
+                        repeatingEvent.getScanCode(),
+                        repeatingEvent.getFlags(),
+                        repeatingEvent.getSource()
+                );
+                AccessibilityShortcutKeyDispatcher.dispatch(normalizeEventForRemote(repeated));
+                handler.postDelayed(this, 50);
+            }
+        }
+    };
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
@@ -39,6 +69,8 @@ public class AccessibilityShortcutService extends AccessibilityService {
     public boolean onUnbind(Intent intent) {
         dispatchedKeyCodes.clear();
         pressedModifierKeys.clear();
+        handler.removeCallbacks(repeatRunnable);
+        repeatingEvent = null;
         return super.onUnbind(intent);
     }
 
@@ -63,8 +95,33 @@ public class AccessibilityShortcutService extends AccessibilityService {
             if (!shouldDispatch) {
                 return false;
             }
+            boolean isNewDown = !wasDispatchedOnDown;
             dispatchedKeyCodes.put(keyCode, true);
+
+            if (isNewDown) {
+                handler.removeCallbacks(repeatRunnable);
+                if (!isModifierKeyCode(keyCode)) {
+                    repeatingEvent = event;
+                    repeatCount = 0;
+                    handler.postDelayed(repeatRunnable, 500);
+                } else {
+                    repeatingEvent = null;
+                }
+            } else {
+                handler.removeCallbacks(repeatRunnable);
+                if (!isModifierKeyCode(keyCode)) {
+                    repeatingEvent = event;
+                    repeatCount = event.getRepeatCount();
+                    handler.postDelayed(repeatRunnable, 50);
+                } else {
+                    repeatingEvent = null;
+                }
+            }
         } else if (action == KeyEvent.ACTION_UP) {
+            if (repeatingEvent != null && repeatingEvent.getKeyCode() == keyCode) {
+                handler.removeCallbacks(repeatRunnable);
+                repeatingEvent = null;
+            }
             if (!wasDispatchedOnDown) {
                 return false;
             }
