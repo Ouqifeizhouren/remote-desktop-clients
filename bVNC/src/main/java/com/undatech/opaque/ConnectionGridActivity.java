@@ -256,6 +256,14 @@ public class ConnectionGridActivity extends AppCompatActivity implements GetText
         Utils.hideKeyboard(this, getCurrentFocus());
         Log.i(TAG, "Launch Connection");
 
+        // If accessibility service is required but not enabled, jump to settings.
+        if (Utils.querySharedPreferenceBoolean(this, Constants.captureShortcutKeysWithAccessibilityTag, true)) {
+            if (!Utils.isAccessibilityShortcutServiceEnabled(this)) {
+                Utils.openAccessibilitySettings(this);
+                return;
+            }
+        }
+
         ActivityManager.MemoryInfo info = Utils.getMemoryInfo(this);
         if (info.lowMemory)
             System.gc();
@@ -355,9 +363,6 @@ public class ConnectionGridActivity extends AppCompatActivity implements GetText
             showGetTextFragment(getPassword);
         } else {
             loadSavedConnections();
-            if (showIntroText) {
-                IntroTextDialog.showIntroTextIfNecessary(this, database, Utils.isFree(this) && isStarting, false);
-            }
         }
     }
 

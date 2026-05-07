@@ -93,6 +93,31 @@ import java.util.concurrent.Executors;
 public class Utils {
     private final static String TAG = "Utils";
     private static final Intent docIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("http://code.google.com/p/android-vnc-viewer/wiki/Documentation"));
+    public static boolean isAccessibilityShortcutServiceEnabled(Context context) {
+        android.view.accessibility.AccessibilityManager manager = (android.view.accessibility.AccessibilityManager) context.getSystemService(Context.ACCESSIBILITY_SERVICE);
+        if (manager == null) {
+            return false;
+        }
+        List<android.accessibilityservice.AccessibilityServiceInfo> enabledServices = 
+                manager.getEnabledAccessibilityServiceList(android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+        if (enabledServices != null) {
+            for (android.accessibilityservice.AccessibilityServiceInfo serviceInfo : enabledServices) {
+                if (serviceInfo.getResolveInfo() != null
+                        && serviceInfo.getResolveInfo().serviceInfo != null
+                        && "com.iiordanov.bVNC.input.AccessibilityShortcutService".equals(serviceInfo.getResolveInfo().serviceInfo.name)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static void openAccessibilitySettings(Context context) {
+        Intent intent = new Intent(android.provider.Settings.ACTION_ACCESSIBILITY_SETTINGS);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+    }
+
     public static String[] standardPackageNames = {
             "com.iiordanov.bVNC", "com.iiordanov.freebVNC",
             "com.iiordanov.aRDP", "com.iiordanov.freeaRDP",

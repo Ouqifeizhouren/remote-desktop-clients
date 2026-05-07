@@ -82,11 +82,13 @@ public class AccessibilityShortcutService extends AccessibilityService {
     }
 
     private KeyEvent normalizeEventForRemote(KeyEvent event) {
-        if (event.getKeyCode() == KeyEvent.KEYCODE_APP_SWITCH && isAltPressed(event)) {
-            int metaState = event.getMetaState();
-            if ((metaState & (KeyEvent.META_ALT_ON | KeyEvent.META_ALT_LEFT_ON | KeyEvent.META_ALT_RIGHT_ON)) == 0) {
-                metaState |= KeyEvent.META_ALT_ON;
-            }
+        int metaState = event.getMetaState();
+        if (isAltPressed(event)) metaState |= KeyEvent.META_ALT_ON;
+        if (isCtrlPressed(event)) metaState |= KeyEvent.META_CTRL_ON;
+        if (isShiftPressed(event)) metaState |= KeyEvent.META_SHIFT_ON;
+        if (isMetaPressed(event)) metaState |= KeyEvent.META_META_ON;
+
+        if (event.getKeyCode() == KeyEvent.KEYCODE_APP_SWITCH && (metaState & KeyEvent.META_ALT_ON) != 0) {
             return new KeyEvent(
                     event.getDownTime(),
                     event.getEventTime(),
@@ -100,7 +102,18 @@ public class AccessibilityShortcutService extends AccessibilityService {
                     event.getSource()
             );
         }
-        return new KeyEvent(event);
+        return new KeyEvent(
+                event.getDownTime(),
+                event.getEventTime(),
+                event.getAction(),
+                event.getKeyCode(),
+                event.getRepeatCount(),
+                metaState,
+                event.getDeviceId(),
+                event.getScanCode(),
+                event.getFlags(),
+                event.getSource()
+        );
     }
 
     private boolean shouldDispatchWithAccessibility(KeyEvent event) {
@@ -108,27 +121,10 @@ public class AccessibilityShortcutService extends AccessibilityService {
         if (keyCode == KeyEvent.KEYCODE_UNKNOWN) {
             return false;
         }
-        return !isTypingKey(keyCode);
-    }
-
-    private boolean isTypingKey(int keyCode) {
-        return (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z)
-                || (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9)
-                || keyCode == KeyEvent.KEYCODE_SPACE
-                || keyCode == KeyEvent.KEYCODE_MINUS
-                || keyCode == KeyEvent.KEYCODE_EQUALS
-                || keyCode == KeyEvent.KEYCODE_LEFT_BRACKET
-                || keyCode == KeyEvent.KEYCODE_RIGHT_BRACKET
-                || keyCode == KeyEvent.KEYCODE_BACKSLASH
-                || keyCode == KeyEvent.KEYCODE_SEMICOLON
-                || keyCode == KeyEvent.KEYCODE_APOSTROPHE
-                || keyCode == KeyEvent.KEYCODE_COMMA
-                || keyCode == KeyEvent.KEYCODE_PERIOD
-                || keyCode == KeyEvent.KEYCODE_SLASH
-                || keyCode == KeyEvent.KEYCODE_GRAVE
-                || keyCode == KeyEvent.KEYCODE_DEL
-                || keyCode == KeyEvent.KEYCODE_FORWARD_DEL
-                || keyCode == KeyEvent.KEYCODE_ENTER;
+        // Dispatch all keys to the remote system via the accessibility service.
+        // This prevents the local Android OS from intercepting system shortcuts
+        // like Win+D, Alt+Tab, etc., and allows the remote system to handle them.
+        return true;
     }
 
     private boolean isModifierKeyCode(int keyCode) {
@@ -157,5 +153,23 @@ public class AccessibilityShortcutService extends AccessibilityService {
         return event.isAltPressed()
                 || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_LEFT, false)
                 || pressedModifierKeys.get(KeyEvent.KEYCODE_ALT_RIGHT, false);
+    }
+
+    private boolean isMetaPressed(KeyEvent event) {
+        return event.isMetaPressed()
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_META_LEFT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_META_RIGHT, false);
+    }
+
+    private boolean isCtrlPressed(KeyEvent event) {
+        return event.isCtrlPressed()
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_CTRL_LEFT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_CTRL_RIGHT, false);
+    }
+
+    private boolean isShiftPressed(KeyEvent event) {
+        return event.isShiftPressed()
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_SHIFT_LEFT, false)
+                || pressedModifierKeys.get(KeyEvent.KEYCODE_SHIFT_RIGHT, false);
     }
 }
